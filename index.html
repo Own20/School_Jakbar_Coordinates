@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps with Multiple Markers</title>
+    <style>
+        /* Set the size of the div element that contains the map */
+        html, body, #mapCanvas {
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="csvFileInput1" accept=".csv">
+    <input type="file" id="csvFileInput2" accept=".csv">
+    <input type="file" id="csvFileInput3" accept=".csv">
+    <input type="file" id="csvFileInput4" accept=".csv">
+    <input type="text" id="searchInput" placeholder="Search name...">
+    <button id="searchButton">Search</button>
+    <div id="mapCanvas"></div>
+
+    <!-- Google Maps JavaScript API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAW-Q34ys2XrR5GIdOryExSjZfUaKZqTNU&callback=initMap"  defer></script>
+    
+    <script>
+        var markers = []; // Array to store markers
+
+        function initMap() {
+            var map = new google.maps.Map(document.getElementById('mapCanvas'), {
+                center: { lat: -6.25112, lng: 106.74482 }, // Default center
+                zoom: 12 // Default zoom level
+            });
+
+            document.getElementById('csvFileInput1').addEventListener('change', function(event) {
+                handleFileSelect(event, 'yellow'); // Load CSV 1 with yellow markers
+            });
+
+            document.getElementById('csvFileInput2').addEventListener('change', function(event) {
+                handleFileSelect(event, 'red'); // Load CSV 2 with red markers
+            });
+
+            document.getElementById('csvFileInput3').addEventListener('change', function(event) {
+                handleFileSelect(event, 'blue'); // Load CSV 3 with blue markers
+            });
+
+            document.getElementById('csvFileInput4').addEventListener('change', function(event) {
+                handleFileSelect(event, 'green'); // Load CSV 4 with green markers
+            });
+
+            document.getElementById('searchButton').addEventListener('click', function() {
+                var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                var matchingMarkers = markers.filter(function(markerData) {
+                    return markerData.name.toLowerCase().includes(searchTerm);
+                });
+
+                if (matchingMarkers.length > 0) {
+                    // Clear existing markers
+                    clearMarkers();
+
+                    // Add markers for matching results
+                    addMarkersToMap(matchingMarkers, 'purple'); // You can change the color if needed
+                } else {
+                    // No matching results found
+                    alert('No matching results found.');
+                }
+            });
+
+            function handleFileSelect(event, markerColor) {
+                var file = event.target.files[0];
+                var reader = new FileReader();
+
+                reader.onload = function (event) {
+                    var csv = event.target.result;
+                    var markersData = csv.split('\n').map(function (line) {
+                        var parts = line.split(',');
+                        return { name: parts[0], lat: parseFloat(parts[1]), lng: parseFloat(parts[2]) };
+                    });
+
+                    // Merge new markers with existing ones
+                    markers = markers.concat(markersData);
+
+                    addMarkersToMap(markersData, markerColor);
+                };
+
+                reader.readAsText(file);
+            }
+
+            function addMarkersToMap(markers, markerColor) {
+                var bounds = new google.maps.LatLngBounds();
+
+                markers.forEach(function (markerData) {
+                    var position = new google.maps.LatLng(markerData.lat, markerData.lng);
+
+                    bounds.extend(position);
+
+                    var marker = new google.maps.Marker({
+                        position: position,
+                        map: map,
+                        icon: {
+                            url: 'http://maps.google.com/mapfiles/ms/icons/' + markerColor + '-dot.png'
+                        },
+                        title: markerData.name // Use name as marker title
+                    });
+
+                    var infoWindowContent = 'Name: ' + markerData.name + '<br>Lat: ' + markerData.lat + '<br>Lng: ' + markerData.lng;
+
+                    var infoWindow = new google.maps.InfoWindow({
+                        content: infoWindowContent
+                    });
+
+                    marker.addListener('click', function () {
+                        infoWindow.open(map, marker);
+                    });
+                });
+
+                map.fitBounds(bounds);
+            }
+
+            function clearMarkers() {
+                // Clear existing markers from the map
+                // Iterate through markers array and set map property to null for each marker
+                markers.forEach(function(marker) {
+                    marker.setMap(null);
+                });
+
+                // Clear markers array
+                markers = [];
+            }
+        }
+    </script>
+
+</body>
+</html>
